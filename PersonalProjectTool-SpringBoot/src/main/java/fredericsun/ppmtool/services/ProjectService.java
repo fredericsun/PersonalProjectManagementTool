@@ -38,4 +38,5 @@ public class ProjectService {
             throw new ProjectIdException("Cannot delete the project. Project ID '" + projectId.toUpperCase() + "' does not exist");
         projectRepository.delete(project);
     }
+
 }
