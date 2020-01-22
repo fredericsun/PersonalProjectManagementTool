@@ -2,9 +2,12 @@ package fredericsun.ppmtool.services;
 
 import fredericsun.ppmtool.domain.Backlog;
 import fredericsun.ppmtool.domain.Project;
+import fredericsun.ppmtool.domain.User;
 import fredericsun.ppmtool.exceptions.ProjectIdException;
+import fredericsun.ppmtool.exceptions.ProjectNotFoundException;
 import fredericsun.ppmtool.repositories.BacklogRepository;
 import fredericsun.ppmtool.repositories.ProjectRepository;
+import fredericsun.ppmtool.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +17,22 @@ public class ProjectService {
     private ProjectRepository projectRepository;
     @Autowired
     private BacklogRepository backlogRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public Project saveOrUpdateProject(Project project) {
+    public Project saveOrUpdateProject(Project project, String username) {
+        if(project.getId() != null){
+            Project existingProject = projectRepository.findByProjectIdentifier(project.getProjectIdentifier());
+            if(existingProject !=null &&(!existingProject.getProjectLeader().equals(username))){
+                throw new ProjectNotFoundException("Project not found in your account");
+            }else if(existingProject == null){
+                throw new ProjectNotFoundException("Project with ID: '"+project.getProjectIdentifier()+"' cannot be updated because it doesn't exist");
+            }
+        }
         try {
+            User user = userRepository.findByUsername(username);
+            project.setUser(user);
+            project.setProjectLeader(user.getUsername());
             project.setProjectIdentifier(project.getProjectIdentifier().toUpperCase());
 
             if (project.getId() == null) {
@@ -35,22 +51,25 @@ public class ProjectService {
         }
     }
 
-    public Project findProjectByIdentifier(String projectId) {
+    public Project findProjectByIdentifier(String projectId, String username) {
         Project project = projectRepository.findByProjectIdentifier(projectId.toUpperCase());
         if (project == null)
             throw new ProjectIdException("Project ID '" + projectId.toUpperCase() + "' does not exist");
-        return projectRepository.findByProjectIdentifier(projectId.toUpperCase());
+        if(!project.getProjectLeader().equals(username))
+            throw new ProjectNotFoundException("Project not found in your account");
+
+        return project;
     }
 
-    public Iterable<Project> findAllProjects() {
-        return projectRepository.findAll();
+    public Iterable<Project> findAllProjects(String username) {
+        return projectRepository.findAllByProjectLeader(username);
     }
 
-    public void deleteProjectByIdentifier(String projectId) {
+    public void deleteProjectByIdentifier(String projectId, String username) {
         Project project = projectRepository.findByProjectIdentifier(projectId.toUpperCase());
         if (project == null)
             throw new ProjectIdException("Cannot delete the project. Project ID '" + projectId.toUpperCase() + "' does not exist");
-        projectRepository.delete(project);
+        projectRepository.delete(findProjectByIdentifier(projectId, username));
     }
 
 }
