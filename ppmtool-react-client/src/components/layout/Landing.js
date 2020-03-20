@@ -8,10 +8,10 @@ import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
-import Header from "./Header";
 import PropTypes from "prop-types";
 import { connect } from "react-redux";
 import { login } from "../../actions/securityActions";
+import Header from "../layout/Header";
 
 function Copyright() {
   return (
@@ -46,6 +46,12 @@ class Landing extends Component {
     };
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  componentDidMount() {
+    if (this.props.security.validToken) {
+      this.props.history.push("/dashboard")
+    }
   }
 
   componentWillReceiveProps(nextProps) {
